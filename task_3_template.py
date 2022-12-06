@@ -59,6 +59,8 @@ U          = np.zeros((nI,nJ))   # U velocity matrix
 V          = np.zeros((nI,nJ))   # V velocity matrix
 P          = np.zeros((nI,nJ))   # pressure matrix
 Pp         = np.zeros((nI,nJ))   # pressure correction matrix
+D          = np.zeros((nI,nJ,4))
+F          = np.zeros((nI,nJ,4))
 
 massFlows  = np.zeros((nI,nJ,4)) # mass flows at the faces
                                   # m_e, m_w, m_n and m_s
@@ -123,9 +125,9 @@ for i in range(1,nI-1):
 
 # Initialize variable matrices
 
-U[:,:] = 
-V[:,:] = 
-P[:,:] = 
+U[:,:] = np.zeros((nI, nJ))
+V[:,:] = np.zeros((nI, nJ))
+P[:,:] = np.zeros((nI, nJ))
 
 # Looping
 
@@ -150,12 +152,30 @@ for iter in range(nIterations):
     ### Compute coefficients at corner nodes (one step inside)
     
     ## Compute coefficients for inner nodes
+    for i in range(1,nI-1):
+        for j in range(1,nJ-1):
+            D[i,j,0] =  nu * dy_CV[i] / dxe_N[i] # east diffusive
+            D[i,j,1] =  nu * dy_CV[i] / dxw_N[i] # west diffusive
+            D[i,j,2] =  nu * dx_CV[j] / dyn_N[j] # north diffusive
+            D[i,j,3] =  nu * dx_CV[j] / dys_N[j] # south diffusive
+                
+            Fx_e = 0.5 * dx_CV[i] / dxe_N[i]
+            Fx_w = 0.5 * dx_CV[i] / dxw_N[i]
+            Fx_n = 0.5 * dy_CV[j] / dyn_N[j]
+            Fx_s = 0.5 * dy_CV[j] / dys_N[j]
+            
+            
+            F[i,j,0] =  Fx_e * (rho * U[i+1,j]) * dy_CV[i] + (1-Fx_e) * rho * U[i,j] * dy_CV[i]  # east convective
+            F[i,j,1] =  Fx_w * (rho * U[i-1,j]) * dy_CV[i] + (1-Fx_w) * rho * U[i,j] * dy_CV[i]  # weast convective
+            F[i,j,2] =  Fx_n * (rho * V[i,j+1]) * dx_CV[j] + (1-Fx_n) * rho * V[i,j] * dx_CV[j]  # north convective
+            F[i,j,3] =  Fx_s * (rho * V[i,j-1]) * dx_CV[j] + (1-Fx_s) * rho * V[i,j] * dx_CV[j]  # south convective
+
     for i in range(2,nI-2):
         for j in range(2,nJ-2):
-            coeffsUV[i,j,0] = 
-            coeffsUV[i,j,1] = 
-            coeffsUV[i,j,2] = 
-            coeffsUV[i,j,3] = 
+            coeffsUV[i,j,0] = D[i,j,0] + max(0,-F[i,j,0])#ae
+            coeffsUV[i,j,1] = D[i,j,1] + max(0,F[i,j,1])#aw
+            coeffsUV[i,j,2] = D[i,j,2] + max(0,-F[i,j,2])#an
+            coeffsUV[i,j,3] = D[i,j,3] + max(0,F[i,j,3])#as
             coeffsUV[i,j,4] = 
             sourceUV[i,j,0] = 
             sourceUV[i,j,1] = 
@@ -164,6 +184,7 @@ for iter in range(nIterations):
     ## Introduce implicit under-relaxation for U and V
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
+            #TODO introduce pressure correction
 
         
         
