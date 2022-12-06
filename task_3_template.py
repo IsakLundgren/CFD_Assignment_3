@@ -14,11 +14,11 @@ import numpy as np
 
 # Fluid properties and B. C. inputs
 
-UWall =  # velocity of the upper wall
-rho   =  # density
-nu    =  # kinematic viscosity
+UWall = 1 # velocity of the upper wall
+rho   = 1 # density
+nu    = 1/1000 # kinematic viscosity
 
-data_file = # data file where the given solution is stored
+data_file = 'data_FOU_CD.txt' #data file where the given solution is stored
 
 # Geometric inputs (fixed so that a fair comparison can be made)
 
@@ -29,13 +29,13 @@ yL =  1 # length in Y direction
 
 # Solver inputs
 
-nIterations           =  # maximum number of iterations
-n_inner_iterations_gs =  # amount of inner iterations when solving 
+nIterations           =  2000 # maximum number of iterations
+n_inner_iterations_gs =  3000 # amount of inner iterations when solving 
                               # pressure correction with Gauss-Seidel
-resTolerance =  # convergence criteria for residuals
+resTolerance =  0.0001 # convergence criteria for residuals
                      # each variable
-alphaUV =       # under relaxation factor for U and V
-alphaP  =       # under relaxation factor for P
+alphaUV =   0.5    # under relaxation factor for U and V
+alphaP  =   0.5    # under relaxation factor for P
 
 # ================ Code =======================
 
