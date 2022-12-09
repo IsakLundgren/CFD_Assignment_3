@@ -180,10 +180,10 @@ for iter in range(nIterations):
             V_s = 0.5(V(i,j) - V(i-1,j)) + ((dx_CV(i) / (4*coeffsUV[i,j,4]))*((P(i,j+1) - 3*P(i,j) + 3*P(i,j-1) - P(i,j-2))))
 
             #TODO make u, v accordin to rhie chow
-            F[i,j,0] =  rho * U[i+1,j] * dy_CV[i]  # east convective
-            F[i,j,1] =  rho * U[i-1,j] * dy_CV[i]  # weast convective
-            F[i,j,2] =  rho * V[i,j+1] * dx_CV[j]  # north convective
-            F[i,j,3] =  rho * V[i,j-1] * dx_CV[j]  # south convective
+            F[i,j,0] =  rho * U_e[i+1,j] * dy_CV[i]  # east convective
+            F[i,j,1] =  rho * U_w[i-1,j] * dy_CV[i]  # weast convective
+            F[i,j,2] =  rho * V_n[i,j+1] * dx_CV[j]  # north convective
+            F[i,j,3] =  rho * V_s[i,j-1] * dx_CV[j]  # south convective
 
     
     ## Calculate pressure correction equation coefficients
@@ -193,26 +193,35 @@ for iter in range(nIterations):
         
         # hint: set homogeneous Neumann coefficients with if 
         
-            coeffsPp(i,j,1) = ;
+            coeffsPp[i,j,0] = #ae;
             
-            coeffsPp(i,j,2) = ;
+            coeffsPp[i,j,1] = #aw;
             
-            coeffsPp(i,j,3) = ;
+            coeffsPp[i,j,2] = #an;
             
-            coeffsPp(i,j,4) = ;
+            coeffsPp[i,j,3] = #as;
             
-            coeffsPp(i,j,5) = ;
-            sourcePp(i,j)   = ;
-        end
-    end
+            coeffsPp[i,j,4] = ;
+            sourcePp[i,j]   = ;
     
     # Solve for pressure correction (Note that more that one loop is used)
     for iter_gs in range(n_inner_iterations_gs):
         for j in range(1,nJ-1):
             for i in range(1,nI-1):    
+                RHS_P = coeffsPp[i,j,0]*Pp[i+1,j] + \
+                        coeffsPp[i,j,1] * Pp[i-1,j] \
+                       + coeffsPp[i,j,2] * Pp[i,j+1] + coeffsPp[i,j,3]*Pp[i,j-1] + sourcePp[i,j]
+                
+                Pp[i,j] = alphaP *  RHS_P / coeffsPp[i,j,4]        
     
     # Set Pp with reference to node (2,2) and copy to boundaries
-    
+    for i in range(1, nI-1):
+        
+        j = 1
+
+
+
+        j = nJ-1
     # Correct velocities, pressure and mass flows
 
     for i in range(1,nI-1):
