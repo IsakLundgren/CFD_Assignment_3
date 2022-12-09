@@ -154,18 +154,18 @@ for iter in range(nIterations):
             coeffsUV[i,j,3] = D[i,j,3] + max(0,F[i,j,3]) #as
             coeffsUV[i,j,4] = np.sum(coeffsUV[i,j,0:4])  #ap
             ## Introduce pressure source and implicit under-relaxation for U and V
-            sourceUV[i,j,0] = (P(i+1,j) - P(i,j)) * dy_CV + (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * U[i,j]
-            sourceUV[i,j,1] = (P(i,j+1) - P(i,j)) * dx_CV + (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * V[i,j]
+            sourceUV[i,j,0] = 1/2 * (P(i+1,j) - P(i-1,j)) * dy_CV + (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * U[i,j]
+            sourceUV[i,j,1] = 1/2 * (P(i,j+1) - P(i,j-1)) * dx_CV + (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * V[i,j]
 
     #Solve U, V fields, along with implicit under-relaxation factor to a_p
     for iter_gs in range(n_inner_iterations_gs):
         for j in range(1,nJ-1):
             for i in range(1,nI-1):
                 RHS = coeffsUV[i,j,0] * U[i+1,j] + coeffsUV[i,j,1] * U[i-1,j] \
-                	+ coeffsUV[i,j,2] * U[i,j+1] + coeffsUV[i,j,3] * U[i,j-1]
+                	+ coeffsUV[i,j,2] * U[i,j+1] + coeffsUV[i,j,3] * U[i,j-1] + sourceUV[i,j,0]
                 U[i,j] = alphaUV * RHS/ coeffsUV[i,j,4]
                 RHS = coeffsUV[i,j,0] * V[i+1,j] + coeffsUV[i,j,1] * V[i-1,j] \
-                	+ coeffsUV[i,j,2] * V[i,j+1] + coeffsUV[i,j,3] * V[i,j-1]
+                	+ coeffsUV[i,j,2] * V[i,j+1] + coeffsUV[i,j,3] * V[i,j-1] + sourceUV[i,j,1]
                 V[i,j] = alphaUV * RHS/ coeffsUV[i,j,4]
     
     ## Calculate at the faces using Rhie-Chow for the face velocities
