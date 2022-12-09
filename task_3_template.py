@@ -131,11 +131,11 @@ for i in range(1,nI-1):
         D[i,j,2] =  nu * dx_CV[j] / dyn_N[j] # north diffusive
         D[i,j,3] =  nu * dx_CV[j] / dys_N[j] # south diffusive        
 
-# Initialize variable matrices
-
-U[:,:] = np.zeros((nI, nJ))
-V[:,:] = np.zeros((nI, nJ))
-P[:,:] = np.zeros((nI, nJ))
+# Initialize face velocity matrices
+U_e = np.zeros((nI,nJ))
+U_w = np.zeros((nI,nJ))
+V_n = np.zeros((nI,nJ))
+V_s = np.zeros((nI,nJ))
 
 # Looping
 
@@ -154,30 +154,28 @@ for iter in range(nIterations):
             coeffsUV[i,j,3] = D[i,j,3] + max(0,F[i,j,3]) #as
             coeffsUV[i,j,4] = np.sum(coeffsUV[i,j,0:4])  #ap
             ## Introduce pressure source and implicit under-relaxation for U and V
-            sourceUV[i,j,0] = (P(i+1,j) - P(i,j)) * dy_CV + (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * U[i,j]
-            sourceUV[i,j,1] = (P(i,j+1) - P(i,j)) * dx_CV + (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * V[i,j]
-        
-    
+            sourceUV[i,j,0] = 1/2 * (P(i+1,j) - P(i-1,j)) * dy_CV + (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * U[i,j]
+            sourceUV[i,j,1] = 1/2 * (P(i,j+1) - P(i,j-1)) * dx_CV + (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * V[i,j]
 
     #Solve U, V fields, along with implicit under-relaxation factor to a_p
     for iter_gs in range(n_inner_iterations_gs):
         for j in range(1,nJ-1):
             for i in range(1,nI-1):
                 RHS = coeffsUV[i,j,0] * U[i+1,j] + coeffsUV[i,j,1] * U[i-1,j] \
-                	+ coeffsUV[i,j,2] * U[i,j+1] + coeffsUV[i,j,3] * U[i,j-1]
+                	+ coeffsUV[i,j,2] * U[i,j+1] + coeffsUV[i,j,3] * U[i,j-1] + sourceUV[i,j,0]
                 U[i,j] = alphaUV * RHS/ coeffsUV[i,j,4]
                 RHS = coeffsUV[i,j,0] * V[i+1,j] + coeffsUV[i,j,1] * V[i-1,j] \
-                	+ coeffsUV[i,j,2] * V[i,j+1] + coeffsUV[i,j,3] * V[i,j-1]
+                	+ coeffsUV[i,j,2] * V[i,j+1] + coeffsUV[i,j,3] * V[i,j-1] + sourceUV[i,j,1]
                 V[i,j] = alphaUV * RHS/ coeffsUV[i,j,4]
     
     ## Calculate at the faces using Rhie-Chow for the face velocities
     for i in range(1,nI-1):
         for j in range(1,nJ-1):   
             
-            U_e = 0.5(U(i+1,j) - U(i,j)) + ((dy_CV(i) / (4*coeffsUV[i,j,4]))*((P(i+2,j) - 3*P(i+1,j) + 3*P(i,j) - P(i-1,j))))
-            U_w = 0.5(U(i,j) - U(i-1,j)) + ((dy_CV(i) / (4*coeffsUV[i,j,4]))*((P(i+1,j) - 3*P(i,j) + 3*P(i-1,j) - P(i-2,j))))
-            V_n = 0.5(V(i+1,j) - V(i,j)) + ((dx_CV(j) / (4*coeffsUV[i,j,4]))*((P(i,j+2) - 3*P(i,j+1) + 3*P(i,j) - P(i,j-1))))
-            V_s = 0.5(V(i,j) - V(i-1,j)) + ((dx_CV(i) / (4*coeffsUV[i,j,4]))*((P(i,j+1) - 3*P(i,j) + 3*P(i,j-1) - P(i,j-2))))
+            U_e[i,j] = 0.5(U(i+1,j) - U(i,j)) + ((dy_CV(i) / (4*coeffsUV[i,j,4]))*((P(i+2,j) - 3*P(i+1,j) + 3*P(i,j) - P(i-1,j))))
+            U_w[i,j] = 0.5(U(i,j) - U(i-1,j)) + ((dy_CV(i) / (4*coeffsUV[i,j,4]))*((P(i+1,j) - 3*P(i,j) + 3*P(i-1,j) - P(i-2,j))))
+            V_n[i,j] = 0.5(V(i+1,j) - V(i,j)) + ((dx_CV(j) / (4*coeffsUV[i,j,4]))*((P(i,j+2) - 3*P(i,j+1) + 3*P(i,j) - P(i,j-1))))
+            V_s[i,j] = 0.5(V(i,j) - V(i-1,j)) + ((dx_CV(i) / (4*coeffsUV[i,j,4]))*((P(i,j+1) - 3*P(i,j) + 3*P(i,j-1) - P(i,j-2))))
 
             #TODO make u, v accordin to rhie chow
             F[i,j,0] =  rho * U_e[i+1,j] * dy_CV[i]  # east convective
@@ -190,19 +188,22 @@ for iter in range(nIterations):
     
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-        
-        # hint: set homogeneous Neumann coefficients with if 
-        
-            coeffsPp[i,j,0] = #ae;
+            # hint: set homogeneous Neumann coefficients with if 
+            #Equidistand mesh
+            if(i != nI-2):
+                coeffsPp[i,j,0] = rho * 2 * dy_CV**2 / (coeffsUV[i+1,j,0] + coeffsUV[i,j,0])#E
             
-            coeffsPp[i,j,1] = #aw;
+            if(i != 1):
+                coeffsPp[i,j,1] = rho * 2 * dy_CV**2 / (coeffsUV[i-1,j,0] + coeffsUV[i,j,0])#W
             
-            coeffsPp[i,j,2] = #an;
+            if(j != nJ-2):
+                coeffsPp[i,j,2] = rho * 2 * dx_CV**2 / (coeffsUV[i,j+1,0] + coeffsUV[i,j,0])#N
             
-            coeffsPp[i,j,3] = #as;
+            if(j != 1):
+                coeffsPp[i,j,3] = rho * 2 * dx_CV**2 / (coeffsUV[i,j-1,0] + coeffsUV[i,j,0])#S
             
-            coeffsPp[i,j,4] = ;
-            sourcePp[i,j]   = ;
+            coeffsPp[i,j,4] = np.sum(coeffsPp[i,j,0:4])#P #TODO Check that this summation is correct
+            sourcePp[i,j]   = rho * dy_CV * (U_w[i,j] - U_e[i,j]) + rho * dx_CV * (V_s[i,j] - V_n[i,j]) #S_U
     
     # Solve for pressure correction (Note that more that one loop is used)
     for iter_gs in range(n_inner_iterations_gs):
