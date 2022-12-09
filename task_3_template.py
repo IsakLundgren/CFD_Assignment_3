@@ -145,32 +145,24 @@ for iter in range(nIterations):
     
     # Impose pressure boundary condition, all homogeneous Neumann
     
-    # Compute coefficients for U and V equations
-    ## Compute coefficients for nodes one step inside the domain
-    
-    ### Compute coefficients at corner nodes (one step inside)
-    
     ## Compute coefficients for nodes
-    for i in range(2,nI-2):
-        for j in range(2,nJ-2):
+    for i in range(1,nI-1):
+        for j in range(1,nJ-1):
             coeffsUV[i,j,0] = D[i,j,0] + max(0,-F[i,j,0])#ae
             coeffsUV[i,j,1] = D[i,j,1] + max(0,F[i,j,1]) #aw
             coeffsUV[i,j,2] = D[i,j,2] + max(0,-F[i,j,2])#an
             coeffsUV[i,j,3] = D[i,j,3] + max(0,F[i,j,3]) #as
             coeffsUV[i,j,4] = np.sum(coeffsUV[i,j,0:4])  #ap
-            sourceUV[i,j,0] = 
-            sourceUV[i,j,1] = 
+            sourceUV[i,j,0] = (P(i+1,j) - P(i,j)) * dy_CV
+            sourceUV[i,j,1] = (P(i,j+1) - P(i,j)) * dx_CV
         
     
     ## Introduce implicit under-relaxation for U and V
-    for i in range(1,nI-1):
+    #Solve U, V fields
+    for iter_gs in range(n_inner_iterations_gs):
         for j in range(1,nJ-1):
-            #TODO introduce pressure correction
-
-
-        
-        
-    ## Solve for U and V using Gauss-Seidel   
+            for i in range(1,nI-1):
+                
     
     ## Calculate at the faces using Rhie-Chow for the face velocities
     for i in range(1,nI-1):
