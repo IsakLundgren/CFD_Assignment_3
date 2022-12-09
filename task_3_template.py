@@ -168,10 +168,10 @@ for iter in range(nIterations):
     for i in range(1,nI-1):
         for j in range(1,nJ-1):   
             
-            U_e = 
-            U_w = 
-            V_e = 
-            V_w = 
+            U_e = 0.5(U(i+1,j) - U(i,j)) + ((dy_CV(i) / (4*coeffsUV[i,j,4]))*((P(i+2,j) - 3*P(i+1,j) + 3*P(i,j) - P(i-1,j))))
+            U_w = 0.5(U(i,j) - U(i-1,j)) + ((dy_CV(i) / (4*coeffsUV[i,j,4]))*((P(i+1,j) - 3*P(i,j) + 3*P(i-1,j) - P(i-2,j))))
+            V_n = 0.5(V(i+1,j) - V(i,j)) + ((dx_CV(j) / (4*coeffsUV[i,j,4]))*((P(i,j+2) - 3*P(i,j+1) + 3*P(i,j) - P(i,j-1))))
+            V_s = 0.5(V(i,j) - V(i-1,j)) + ((dx_CV(i) / (4*coeffsUV[i,j,4]))*((P(i,j+1) - 3*P(i,j) + 3*P(i,j-1) - P(i,j-2))))
 
             #TODO make u, v accordin to rhie chow
             F[i,j,0] =  rho * U[i+1,j] * dy_CV[i]  # east convective
