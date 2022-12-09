@@ -213,7 +213,7 @@ for iter in range(nIterations):
                         coeffsPp[i,j,1] * Pp[i-1,j] \
                        + coeffsPp[i,j,2] * Pp[i,j+1] + coeffsPp[i,j,3]*Pp[i,j-1] + sourcePp[i,j]
                 
-                Pp[i,j] = alphaP *  RHS_P / coeffsPp[i,j,4]        
+                Pp[i,j] = RHS_P / coeffsPp[i,j,4]        
     
     # Set Pp with reference to node (2,2) and copy to boundaries
     for i in range(1, nI-1):
@@ -226,7 +226,8 @@ for iter in range(nIterations):
     # Correct velocities, pressure and mass flows
 
     for i in range(1,nI-1):
-        for j in range(1,nJ-1):         
+        for j in range(1,nJ-1):
+            P[i,j] = P[i,j] + Pp[i,j]
     
     # impose zero mass flow at the boundaries
 
