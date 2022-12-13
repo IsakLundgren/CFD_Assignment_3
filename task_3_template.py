@@ -126,10 +126,10 @@ for i in range(1,nI-1):
 #Set D values
 for i in range(1,nI-1):
     for j in range(1,nJ-1):
-        D[i,j,0] =  nu * dy_CV[i,j] / dxe_N[i] # east diffusive
-        D[i,j,1] =  nu * dy_CV[i,j] / dxw_N[i] # west diffusive
-        D[i,j,2] =  nu * dx_CV[i,j] / dyn_N[j] # north diffusive
-        D[i,j,3] =  nu * dx_CV[i,j] / dys_N[j] # south diffusive        
+        D[i,j,0] =  nu * dy_CV[i,j] / dxe_N[i,j] # east diffusive
+        D[i,j,1] =  nu * dy_CV[i,j] / dxw_N[i,j] # west diffusive
+        D[i,j,2] =  nu * dx_CV[i,j] / dyn_N[i,j] # north diffusive
+        D[i,j,3] =  nu * dx_CV[i,j] / dys_N[i,j] # south diffusive        
 
 # Initialize face velocity matrices
 U_e = np.zeros((nI,nJ))
