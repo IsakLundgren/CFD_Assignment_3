@@ -148,19 +148,19 @@ for iter in range(nIterations):
     # Impose boundary conditions for velocities, only the top boundary wall
     # is moving from left to right with UWall
     for i in range(0,nI):
-        j = 1
+        j = 0
         V[i,j] = 0
         U[i,j] = 0
 
-        j = nJ-2
+        j = nJ-1
         U[i,j] = UWall
         V[i,j] = 0
     for j in range(0, nJ):
-        i = 1
+        i = 0
         V[i,j] = 0
         U[i,j] = 0 
 
-        i = nI-2
+        i = nI-1
         V[i,j] = 0
         U[i,j] = 0
 
@@ -190,13 +190,19 @@ for iter in range(nIterations):
                 V[i,j] = alphaUV * RHS/ coeffsUV[i,j,4]
     
     ## Calculate at the faces using Rhie-Chow for the face velocities
-    for i in range(2,nI-2):
-        for j in range(2,nJ-2):   
-            
-            U_e[i,j] = 0.5*(U[i+1,j] + U[i,j]) + ((dy_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i+2,j] - 3*P[i+1,j] + 3*P[i,j] - P[i-1,j])))
-            U_w[i,j] = 0.5*(U[i,j] + U[i-1,j]) + ((dy_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i+1,j] - 3*P[i,j] + 3*P[i-1,j] - P[i-2,j])))
-            V_n[i,j] = 0.5*(V[i+1,j] + V[i,j]) + ((dx_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i,j+2] - 3*P[i,j+1] + 3*P[i,j] - P[i,j-1])))
-            V_s[i,j] = 0.5*(V[i,j] + V[i-1,j]) + ((dx_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i,j+1] - 3*P[i,j] + 3*P[i,j-1] - P[i,j-2])))
+    for i in range(1,nI-1):
+        for j in range(1,nJ-1):
+            if i != nI-2:
+                U_e[i,j] = 0.5*(U[i+1,j] + U[i,j]) + ((dy_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i+2,j] - 3*P[i+1,j] + 3*P[i,j] - P[i-1,j])))
+
+            if i != 1:
+                U_w[i,j] = 0.5*(U[i,j] + U[i-1,j]) + ((dy_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i+1,j] - 3*P[i,j] + 3*P[i-1,j] - P[i-2,j])))
+
+            if j != nJ-2:
+                V_n[i,j] = 0.5*(V[i+1,j] + V[i,j]) + ((dx_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i,j+2] - 3*P[i,j+1] + 3*P[i,j] - P[i,j-1])))
+
+            if j != 1:
+                V_s[i,j] = 0.5*(V[i,j] + V[i-1,j]) + ((dx_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i,j+1] - 3*P[i,j] + 3*P[i,j-1] - P[i,j-2])))
 
             #U,V  accordin to rhie chow
             F[i,j,0] =  rho * U_e[i+1,j] * dy_CV[i,j]  # east convective
