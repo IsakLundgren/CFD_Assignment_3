@@ -302,6 +302,7 @@ plt.figure()
 
 # U velocity contour
 plt.subplot(2,3,1)
+plt.contourf(xCoords_N, yCoords_N, U)
 plt.title('U velocity [m/s]')
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
@@ -309,12 +310,14 @@ plt.ylabel('y [m]')
 # V velocity contour
 plt.subplot(2,3,2)
 plt.title('V velocity [m/s]')
+plt.contourf(xCoords_N, yCoords_N, V)
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
 
 # P contour
 plt.subplot(2,3,3)
 plt.title('Pressure [Pa]')
+plt.contourf(xCoords_N, yCoords_N, P)
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
 
