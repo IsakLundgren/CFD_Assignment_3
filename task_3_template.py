@@ -244,7 +244,20 @@ for iter in range(nIterations):
 
     
     # impose zero mass flow at the boundaries
+    for i in range(1, nI-1):
+        j = 0
+        F[i,j,3] = 0
 
+        j = nJ - 1
+        F[i,j,2] = 0
+
+    for j in range(1, nJ-1):
+        i = 0
+        F[i,j,0] = 0
+
+        i = nI-1
+        F[i,j,1] = 0    
+        
     # Copy P to boundaries
     for i in range(1, nI-1):
         j = 0
