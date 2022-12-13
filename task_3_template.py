@@ -177,7 +177,7 @@ for iter in range(nIterations):
             V_n[i,j] = 0.5(V(i+1,j) - V(i,j)) + ((dx_CV(j) / (4*coeffsUV[i,j,4]))*((P(i,j+2) - 3*P(i,j+1) + 3*P(i,j) - P(i,j-1))))
             V_s[i,j] = 0.5(V(i,j) - V(i-1,j)) + ((dx_CV(i) / (4*coeffsUV[i,j,4]))*((P(i,j+1) - 3*P(i,j) + 3*P(i,j-1) - P(i,j-2))))
 
-            #TODO make u, v accordin to rhie chow
+            #U,V  accordin to rhie chow
             F[i,j,0] =  rho * U_e[i+1,j] * dy_CV[i]  # east convective
             F[i,j,1] =  rho * U_w[i-1,j] * dy_CV[i]  # weast convective
             F[i,j,2] =  rho * V_n[i,j+1] * dx_CV[j]  # north convective
@@ -242,15 +242,25 @@ for iter in range(nIterations):
     # Copy P to boundaries
     
     # Compute residuals
-    residuals_U.append(0) # U momentum residual
-    residuals_V.append(0) # V momentum residual
-    residuals_c.append(0) # continuity residual
-
+    
+    R_U = 0
+    R_V = 0
+    R_C = 0
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            residuals_U[-1] = 
-            residuals_V[-1] = 
-            residuals_c[-1] = 
+            R_U = R_U + abs(coeffsUV[i,j,4]*U[i,j] - coeffsUV[i,j,0]*U[i+1,j] \
+                - coeffsUV[i,j,1]*U[i-1,j] - coeffsUV[i,j,2]*U[i,j+1] - coeffsUV[i,j,3]*U[i,j-1] - sourceUV[i,j,0])
+            
+            R_V = R_V + abs(coeffsUV[i,j,4]*V[i,j] - coeffsUV[i,j,0]*V[i+1,j] \
+                - coeffsUV[i,j,1]*V[i-1,j] - coeffsUV[i,j,2]*V[i,j+1] - coeffsUV[i,j,3]*V[i,j-1] - sourceUV[i,j,1])
+            
+            R_C = R_C + abs(-F[i,j,0] +F[i,j,1] - F[i,j,2] +F[i,j,3])
+            
+            #residuals_c[-1] = 
+
+    residuals_U.append(R_U) # U momentum residual
+    residuals_V.append(R_V) # V momentum residual
+    residuals_c.append(R_C) # continuity residual
 
     print('iteration: %d\nresU = %.5e, resV = %.5e, resCon = %.5e\n\n'\
         % (iter, residuals_U[-1], residuals_V[-1], residuals_c[-1]))
