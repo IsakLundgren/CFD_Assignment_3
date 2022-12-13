@@ -219,10 +219,19 @@ for iter in range(nIterations):
     for i in range(1, nI-1):
         
         j = 1
-
+        Pp[i,j] = Pp[i,j+1]
 
 
         j = nJ-1
+        Pp[i,j+1] = Pp[i, j]
+    
+    for j in range(1, nJ-1):
+        i = 1
+        Pp[i,j] = Pp[i+1, j]
+
+        i = nI-1
+        Pp[i+1,j] = Pp[i,j]
+           
     # Correct velocities, pressure and mass flows
 
     for i in range(1,nI-1):
