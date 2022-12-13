@@ -169,13 +169,13 @@ for iter in range(nIterations):
                 V[i,j] = alphaUV * RHS/ coeffsUV[i,j,4]
     
     ## Calculate at the faces using Rhie-Chow for the face velocities
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):   
+    for i in range(2,nI-2):
+        for j in range(2,nJ-2):   
             
-            U_e[i,j] = 0.5(U[i+1,j] - U[i,j]) + ((dy_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i+2,j] - 3*P[i+1,j] + 3*P[i,j] - P[i-1,j])))
-            U_w[i,j] = 0.5(U[i,j] - U[i-1,j]) + ((dy_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i+1,j] - 3*P[i,j] + 3*P[i-1,j] - P[i-2,j])))
-            V_n[i,j] = 0.5(V[i+1,j] - V[i,j]) + ((dx_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i,j+2] - 3*P[i,j+1] + 3*P[i,j] - P[i,j-1])))
-            V_s[i,j] = 0.5(V[i,j] - V[i-1,j]) + ((dx_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i,j+1] - 3*P[i,j] + 3*P[i,j-1] - P[i,j-2])))
+            U_e[i,j] = 0.5*(U[i+1,j] - U[i,j]) + ((dy_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i+2,j] - 3*P[i+1,j] + 3*P[i,j] - P[i-1,j])))
+            U_w[i,j] = 0.5*(U[i,j] - U[i-1,j]) + ((dy_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i+1,j] - 3*P[i,j] + 3*P[i-1,j] - P[i-2,j])))
+            V_n[i,j] = 0.5*(V[i+1,j] - V[i,j]) + ((dx_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i,j+2] - 3*P[i,j+1] + 3*P[i,j] - P[i,j-1])))
+            V_s[i,j] = 0.5*(V[i,j] - V[i-1,j]) + ((dx_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i,j+1] - 3*P[i,j] + 3*P[i,j-1] - P[i,j-2])))
 
             #U,V  accordin to rhie chow
             F[i,j,0] =  rho * U_e[i+1,j] * dy_CV[i,j]  # east convective
@@ -246,7 +246,19 @@ for iter in range(nIterations):
     # impose zero mass flow at the boundaries
 
     # Copy P to boundaries
-    
+    for i in range(1, nI-1):
+        j = 0
+        P[i,j] = P[i,j+1]
+
+        j= nJ-1
+        P[i,j] = P[i,j-1]
+
+    for j in range(1,nJ-1):
+        i = 0
+        P[i,j] = P[i,j +1]
+
+        i = nI - 1
+        P[i,j] = P[i-1, j]    
     # Compute residuals
     
     R_U = 0
