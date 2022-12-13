@@ -193,16 +193,20 @@ for iter in range(nIterations):
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
             if i != nI-2:
-                U_e[i,j] = 0.5*(U[i+1,j] + U[i,j]) + ((dy_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i+2,j] - 3*P[i+1,j] + 3*P[i,j] - P[i-1,j])))
+                a_P_e = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i+1,j,4])
+                U_e[i,j] = 0.5*(U[i+1,j] + U[i,j]) + ((dy_CV[i,j] / (4*a_P_e))*((P[i+2,j] - 3*P[i+1,j] + 3*P[i,j] - P[i-1,j])))
 
             if i != 1:
-                U_w[i,j] = 0.5*(U[i,j] + U[i-1,j]) + ((dy_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i+1,j] - 3*P[i,j] + 3*P[i-1,j] - P[i-2,j])))
+                a_P_w = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i-1,j,4])
+                U_w[i,j] = 0.5*(U[i,j] + U[i-1,j]) + ((dy_CV[i,j] / (4*a_P_w))*((P[i+1,j] - 3*P[i,j] + 3*P[i-1,j] - P[i-2,j])))
 
             if j != nJ-2:
-                V_n[i,j] = 0.5*(V[i+1,j] + V[i,j]) + ((dx_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i,j+2] - 3*P[i,j+1] + 3*P[i,j] - P[i,j-1])))
+                a_P_n = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i,j+1,4])
+                V_n[i,j] = 0.5*(V[i+1,j] + V[i,j]) + ((dx_CV[i,j] / (4*a_P_n))*((P[i,j+2] - 3*P[i,j+1] + 3*P[i,j] - P[i,j-1])))
 
             if j != 1:
-                V_s[i,j] = 0.5*(V[i,j] + V[i-1,j]) + ((dx_CV[i,j] / (4*coeffsUV[i,j,4]))*((P[i,j+1] - 3*P[i,j] + 3*P[i,j-1] - P[i,j-2])))
+                a_P_s = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i,j-1,4])
+                V_s[i,j] = 0.5*(V[i,j] + V[i-1,j]) + ((dx_CV[i,j] / (4*a_P_s))*((P[i,j+1] - 3*P[i,j] + 3*P[i,j-1] - P[i,j-2])))
 
             #U,V  accordin to rhie chow
             F[i,j,0] =  rho * U_e[i+1,j] * dy_CV[i,j]  # east convective
