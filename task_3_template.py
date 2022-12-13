@@ -145,6 +145,10 @@ for i in range(0,nI):
 # Looping
 
 for iter in range(nIterations):
+    coeffsUV[:, :, :] = 0
+    sourceUV[:, :, :] = 0
+    sourcePp[:, :] = 0
+    coeffsPp[:, :, :] = 0
     # Impose boundary conditions for velocities, only the top boundary wall
     # is moving from left to right with UWall
     U[:, -1] = UWall
@@ -177,34 +181,36 @@ for iter in range(nIterations):
             #TODO make Dirichlet bc-Coeffs
             if i == 1:
                 coeffsUV[i,j,1] = 0
+                coeffsUV[i, j, 4] += 2 * nu * dy_CV[i,j] / dx_CV[i, j]
 
             if i == nI-2:
                 coeffsUV[i,j,0] = 0
+                coeffsUV[i, j, 4] += 2 * nu * dy_CV[i,j] / dx_CV[i, j]
 
             if j == 1:
                 coeffsUV[i,j,3] = 0
+                coeffsUV[i, j, 4] += 2 * nu * dy_CV[i,j] / dx_CV[i, j]
 
             if j == nJ-2:
                 coeffsUV[i,j,2] = 0
-                
+                coeffsUV[i, j, 4] += 2 * nu * dy_CV[i,j] / dx_CV[i, j]
+
                 sourceUV[i,j,0] += 2 * nu * dx_CV[i,j] / dy_CV[i,j] * UWall
 
             #Maybe remove Sp, probably not
-            Sp= 0#rho * dy_CV[i,j]* (U_w[i,j] - U_e[i,j]) + rho * dx_CV[i,j]* (V_s[i,j] - V_n[i,j])
-            coeffsUV[i,j,4] = np.sum(coeffsUV[i,j,0:4])  -Sp #ap
+            Sp= rho * dy_CV[i,j] * (U_w[i,j] - U_e[i,j]) + rho * dx_CV[i,j]* (V_s[i,j] - V_n[i,j])
+            coeffsUV[i,j,4] += np.sum(coeffsUV[i,j,0:4]) - Sp #ap
             ## Introduce pressure source and implicit under-relaxation for U and V
-            sourceUV[i,j,0] = 1/2 * (P[i-1,j] - P[i+1,j]) * dy_CV[i,j]+ (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * U[i,j]
-            sourceUV[i,j,1] = 1/2 * (P[i,j-1] - P[i,j+1]) * dx_CV[i,j]+ (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * V[i,j]
+            sourceUV[i,j,0] += 1/2 * (P[i-1,j] - P[i+1,j]) * dy_CV[i,j]+ (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * U[i,j]
+            sourceUV[i,j,1] += 1/2 * (P[i,j-1] - P[i,j+1]) * dx_CV[i,j]+ (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * V[i,j]
 
     #Solve U, V fields, along with implicit under-relaxation factor to a_p
     for iter_gs in range(n_inner_iterations_gs):
         for j in range(1,nJ-1):
             for i in range(1,nI-1):
-                RHS = coeffsUV[i,j,0] * U[i+1,j] + coeffsUV[i,j,1] * U[i-1,j] \
-                	+ coeffsUV[i,j,2] * U[i,j+1] + coeffsUV[i,j,3] * U[i,j-1] + sourceUV[i,j,0]
+                RHS = coeffsUV[i,j,0] * U[i+1,j] + coeffsUV[i,j,1] * U[i-1,j] + coeffsUV[i,j,2] * U[i,j+1] + coeffsUV[i,j,3] * U[i,j-1] + sourceUV[i,j,0]
                 U[i,j] = alphaUV * RHS/ coeffsUV[i,j,4]
-                RHS = coeffsUV[i,j,0] * V[i+1,j] + coeffsUV[i,j,1] * V[i-1,j] \
-                	+ coeffsUV[i,j,2] * V[i,j+1] + coeffsUV[i,j,3] * V[i,j-1] + sourceUV[i,j,1]
+                RHS = coeffsUV[i,j,0] * V[i+1,j] + coeffsUV[i,j,1] * V[i-1,j] + coeffsUV[i,j,2] * V[i,j+1] + coeffsUV[i,j,3] * V[i,j-1] + sourceUV[i,j,1]
                 V[i,j] = alphaUV * RHS/ coeffsUV[i,j,4]
 
     ## Calculate pressure correction equation coefficients
