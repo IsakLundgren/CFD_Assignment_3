@@ -216,27 +216,32 @@ for iter in range(nIterations):
                 Pp[i,j] = RHS_P / coeffsPp[i,j,4]        
     
     # Set Pp with reference to node (2,2) and copy to boundaries
+    Pp[1,1] = 0
     for i in range(1, nI-1):
         
-        j = 1
+        j = 0
         Pp[i,j] = Pp[i,j+1]
 
 
         j = nJ-1
-        Pp[i,j+1] = Pp[i, j]
+        Pp[i,j] = Pp[i,j-1]
     
     for j in range(1, nJ-1):
-        i = 1
+        i = 0
         Pp[i,j] = Pp[i+1, j]
 
         i = nI-1
-        Pp[i+1,j] = Pp[i,j]
+        Pp[i,j] = Pp[i-1,j]
            
     # Correct velocities, pressure and mass flows
-
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            P[i,j] = P[i,j] + Pp[i,j]
+            P[i,j] = P[i,j] + alphaP * Pp[i,j]
+            dU = dy_CV * alphaUV /coeffsUV[i,j,4]
+            U[i,j] = U[i,j] + dU * (Pp[i-1,j] - Pp[i+1,j])
+            dV = dx_CV * alphaUV /coeffsUV[i,j,4]
+            V[i,j] = V[i,j] + dU * (Pp[i,j-1] - Pp[i,j+1])
+
     
     # impose zero mass flow at the boundaries
 
