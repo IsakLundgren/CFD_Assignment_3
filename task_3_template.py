@@ -151,6 +151,10 @@ for i in range(1,nI-1):
 # Looping
 
 for iter in range(nIterations):
+    coeffsUV[:, :, :] = 0
+    sourceUV[:, :, :] = 0
+    sourcePp[:, :] = 0
+    coeffsPp[:, :, :] = 0
     # Impose boundary conditions for velocities, only the top boundary wall
     # is moving from left to right with UWall
     coeffsUV[:,:,:] = 0
