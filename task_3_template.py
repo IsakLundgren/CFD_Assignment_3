@@ -30,12 +30,15 @@ yL =  1 # length in Y direction
 # Solver inputs
 
 nIterations           =  1000 # maximum number of iterations
-n_inner_iterations_gs =  100 # amount of inner iterations when solving 
+n_inner_iterations_gs =  20 # amount of inner iterations when solving 
                               # pressure correction with Gauss-Seidel
+n_inner_iterations_momentum=1 # amount of inner iterations when solving 
+                              # momentum with Gauss-Seidel
+
 resTolerance =  0.0001 # convergence criteria for residuals
                      # each variable
-alphaUV =   0.5    # under relaxation factor for U and V
-alphaP  =   0.2   # under relaxation factor for P
+alphaUV =   0.4    # under relaxation factor for U and V
+alphaP  =   0.7   # under relaxation factor for P
 
 # ================ Code =======================
 
@@ -123,6 +126,13 @@ for i in range(1,nI-1):
         dyn_N[i,j] = yCoords_N[i,j+1] - yCoords_N[i,j]
         dys_N[i,j] = yCoords_N[i,j] - yCoords_N[i,j-1]
 
+
+# Initialize face velocity matrices
+U_e = np.zeros((nI,nJ))
+U_w = np.zeros((nI,nJ))
+V_n = np.zeros((nI,nJ))
+V_s = np.zeros((nI,nJ))
+
 #Set D values
 for i in range(1,nI-1):
     for j in range(1,nJ-1):
@@ -131,26 +141,32 @@ for i in range(1,nI-1):
         D[i,j,2] =  nu * dx_CV[i,j] / dyn_N[i,j] # north diffusive
         D[i,j,3] =  nu * dx_CV[i,j] / dys_N[i,j] # south diffusive        
 
-# Initialize face velocity matrices
-U_e = np.zeros((nI,nJ))
-U_w = np.zeros((nI,nJ))
-V_n = np.zeros((nI,nJ))
-V_s = np.zeros((nI,nJ))
+
 
 #Dirichlet conditions
-for i in range(0,nI):
-    j = nJ-1
-    U[i,j] = UWall
+# for i in range(0,nI):
+#     j = nJ-1
+#     U[i,j] = UWall
 
 # Looping
 
 for iter in range(nIterations):
     # Impose boundary conditions for velocities, only the top boundary wall
     # is moving from left to right with UWall
+    coeffsUV[:,:,:] = 0
+    coeffsPp[:,:,:] = 0
+    sourceUV[:,:,:] = 0
+    sourcePp[:,:] = 0
     U[:, -1] = UWall
 
-    #TODO Maybe calc Fs here
-
+    #TODO Calc Fs here
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            F[i,j,0] =  rho * U_e[i,j] * dy_CV[i,j]  # east convective
+            F[i,j,1] =  rho * U_w[i,j] * dy_CV[i,j]  # weast convective
+            F[i,j,2] =  rho * V_n[i,j] * dx_CV[i,j]  # north convective
+            F[i,j,3] =  rho * V_s[i,j] * dx_CV[i,j]  # south convective
+    
     # Impose pressure boundary condition, all homogeneous Neumann
     for i in range(0, nI):
         j = 0
@@ -175,37 +191,61 @@ for iter in range(nIterations):
             coeffsUV[i,j,3] = D[i,j,3] + max(0,F[i,j,3]) #as
 
             #TODO make Dirichlet bc-Coeffs
-            if i == 1:
-                coeffsUV[i,j,1] = 0
+            # if i == 1:
+            #     coeffsUV[i,j,1] = 0
 
-            if i == nI-2:
-                coeffsUV[i,j,0] = 0
+            # if i == nI-2:
+            #     coeffsUV[i,j,0] = 0
 
-            if j == 1:
-                coeffsUV[i,j,3] = 0
+            # if j == 1:
+            #     coeffsUV[i,j,3] = 0
 
-            if j == nJ-2:
-                coeffsUV[i,j,2] = 0
+            # if j == nJ-2:
+            #     coeffsUV[i,j,2] = 0
                 
-                sourceUV[i,j,0] += 2 * nu * dx_CV[i,j] / dy_CV[i,j] * UWall
+            #     sourceUV[i,j,0] = sourceUV[i,j,0] + 2 * nu * dx_CV[i,j] / dy_CV[i,j] * UWall
 
             #Maybe remove Sp, probably not
-            Sp= 0#rho * dy_CV[i,j]* (U_w[i,j] - U_e[i,j]) + rho * dx_CV[i,j]* (V_s[i,j] - V_n[i,j])
+            Sp= rho * dy_CV[i,j]* (U_w[i,j] - U_e[i,j]) + rho * dx_CV[i,j]* (V_s[i,j] - V_n[i,j])
             coeffsUV[i,j,4] = np.sum(coeffsUV[i,j,0:4])  -Sp #ap
             ## Introduce pressure source and implicit under-relaxation for U and V
-            sourceUV[i,j,0] = 1/2 * (P[i-1,j] - P[i+1,j]) * dy_CV[i,j]+ (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * U[i,j]
-            sourceUV[i,j,1] = 1/2 * (P[i,j-1] - P[i,j+1]) * dx_CV[i,j]+ (1-alphaUV) * coeffsUV[i,j,4] / alphaUV * V[i,j]
+            sourceUV[i,j,0] =  1/2 * (P[i-1,j] - P[i+1,j]) * dy_CV[i,j] + (1-alphaUV) * U[i,j] * coeffsUV[i,j,4] / alphaUV 
+            sourceUV[i,j,1] =  1/2 * (P[i,j-1] - P[i,j+1]) * dx_CV[i,j] + (1-alphaUV) * V[i,j] * coeffsUV[i,j,4] / alphaUV 
 
     #Solve U, V fields, along with implicit under-relaxation factor to a_p
-    for iter_gs in range(n_inner_iterations_gs):
+    for iter_gs in range(n_inner_iterations_momentum):
         for j in range(1,nJ-1):
             for i in range(1,nI-1):
-                RHS = coeffsUV[i,j,0] * U[i+1,j] + coeffsUV[i,j,1] * U[i-1,j] \
+                
+                #U Eq
+                RHS_U = coeffsUV[i,j,0] * U[i+1,j] + coeffsUV[i,j,1] * U[i-1,j] \
                 	+ coeffsUV[i,j,2] * U[i,j+1] + coeffsUV[i,j,3] * U[i,j-1] + sourceUV[i,j,0]
-                U[i,j] = alphaUV * RHS/ coeffsUV[i,j,4]
-                RHS = coeffsUV[i,j,0] * V[i+1,j] + coeffsUV[i,j,1] * V[i-1,j] \
+                U[i,j] = (alphaUV * RHS_U) / coeffsUV[i,j,4]
+                
+                #V Eq 
+                RHS_V = coeffsUV[i,j,0] * V[i+1,j] + coeffsUV[i,j,1] * V[i-1,j] \
                 	+ coeffsUV[i,j,2] * V[i,j+1] + coeffsUV[i,j,3] * V[i,j-1] + sourceUV[i,j,1]
-                V[i,j] = alphaUV * RHS/ coeffsUV[i,j,4]
+                V[i,j] = (alphaUV * RHS_V) / coeffsUV[i,j,4]
+
+    ## Rhie Chow for velocities at faces 
+    for i in range(1,nI-1):
+        for j in range(1,nJ-1):
+            if i != nI-2:
+                a_P_e = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i+1,j,4]) / alphaUV     ## divided by alphaUV here 
+                U_e[i,j] = 0.5*(U[i+1,j] + U[i,j]) + ((dy_CV[i,j] / (4*a_P_e))*((P[i+2,j] - 3*P[i+1,j] + 3*P[i,j] - P[i-1,j])))
+
+            if i != 1:
+                a_P_w = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i-1,j,4]) / alphaUV
+                U_w[i,j] = 0.5*(U[i,j] + U[i-1,j]) + ((dy_CV[i,j] / (4*a_P_w))*((P[i+1,j] - 3*P[i,j] + 3*P[i-1,j] - P[i-2,j])))
+
+            if j != nJ-2:
+                a_P_n = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i,j+1,4]) / alphaUV
+                V_n[i,j] = 0.5*(V[i,j+1] + V[i,j]) + ((dx_CV[i,j] / (4*a_P_n))*((P[i,j+2] - 3*P[i,j+1] + 3*P[i,j] - P[i,j-1])))
+
+            if j != 1:
+                a_P_s = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i,j-1,4]) / alphaUV
+                V_s[i,j] = 0.5*(V[i,j] + V[i,j-1]) + ((dx_CV[i,j] / (4*a_P_s))*((P[i,j+1] - 3*P[i,j] + 3*P[i,j-1] - P[i,j-2])))
+
 
     ## Calculate pressure correction equation coefficients
     for i in range(1,nI-1):
@@ -213,18 +253,18 @@ for iter in range(nIterations):
             # hint: set homogeneous Neumann coefficients with if 
             #Equidistand mesh
             if(i != nI-2):
-                coeffsPp[i,j,0] = rho * 2 * dy_CV[i,j]**2 / (coeffsUV[i+1,j,4] + coeffsUV[i,j,4])*alphaUV #E
+                coeffsPp[i,j,0] = rho * 2 * dy_CV[i,j]**2 * alphaUV / (coeffsUV[i+1,j,4] + coeffsUV[i,j,4]) #E  ###multiplied with alphaUV in here!!
             
             if(i != 1):
-                coeffsPp[i,j,1] = rho * 2 * dy_CV[i,j]**2 / (coeffsUV[i-1,j,4] + coeffsUV[i,j,4])*alphaUV #W
+                coeffsPp[i,j,1] = rho * 2 * dy_CV[i,j]**2 * alphaUV / (coeffsUV[i-1,j,4] + coeffsUV[i,j,4]) #W
             
             if(j != nJ-2):
-                coeffsPp[i,j,2] = rho * 2 * dx_CV[i,j]**2 / (coeffsUV[i,j+1,4] + coeffsUV[i,j,4])*alphaUV #N
+                coeffsPp[i,j,2] = rho * 2 * dx_CV[i,j]**2 * alphaUV / (coeffsUV[i,j+1,4] + coeffsUV[i,j,4]) #N
             
             if(j != 1):
-                coeffsPp[i,j,3] = rho * 2 * dx_CV[i,j]**2 / (coeffsUV[i,j-1,4] + coeffsUV[i,j,4])*alphaUV #S
+                coeffsPp[i,j,3] = rho * 2 * dx_CV[i,j]**2 * alphaUV / (coeffsUV[i,j-1,4] + coeffsUV[i,j,4]) #S
             
-            coeffsPp[i,j,4] = np.sum(coeffsPp[i,j,0:4])#P
+            coeffsPp[i,j,4] = np.sum(coeffsPp[i,j,0:4]) #P
             sourcePp[i,j]   = rho * dy_CV[i,j]* (U_w[i,j] - U_e[i,j]) + rho * dx_CV[i,j]* (V_s[i,j] - V_n[i,j]) #S_U
     
     # Solve for pressure correction (Note that more that one loop is used)
@@ -259,50 +299,28 @@ for iter in range(nIterations):
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
             P[i,j] = P[i,j] + alphaP * Pp[i,j]
-            dU = dy_CV[i,j] / coeffsUV[i,j,4] #####Removed times alphaUV Here
+            dU = dy_CV[i,j] / coeffsUV[i,j,4] *alphaUV 
             U[i,j] = U[i,j] + dU * (Pp[i-1,j] - Pp[i+1,j])/2
-            dV = dx_CV[i,j] / coeffsUV[i,j,4]
+            dV = dx_CV[i,j] / coeffsUV[i,j,4] * alphaUV
             V[i,j] = V[i,j] + dU * (Pp[i,j-1] - Pp[i,j+1])/2
 
     #Rhie-Chow
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
-            if i != nI-2:
-                a_P_e = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i+1,j,4])
-                U_e[i,j] = 0.5*(U[i+1,j] + U[i,j]) + ((dy_CV[i,j] / (4*a_P_e))*((P[i+2,j] - 3*P[i+1,j] + 3*P[i,j] - P[i-1,j])))
-
-            if i != 1:
-                a_P_w = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i-1,j,4])
-                U_w[i,j] = 0.5*(U[i,j] + U[i-1,j]) + ((dy_CV[i,j] / (4*a_P_w))*((P[i+1,j] - 3*P[i,j] + 3*P[i-1,j] - P[i-2,j])))
-
-            if j != nJ-2:
-                a_P_n = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i,j+1,4])
-                V_n[i,j] = 0.5*(V[i,j+1] + V[i,j]) + ((dx_CV[i,j] / (4*a_P_n))*((P[i,j+2] - 3*P[i,j+1] + 3*P[i,j] - P[i,j-1])))
-
-            if j != 1:
-                a_P_s = 1/2 *(coeffsUV[i,j,4] + coeffsUV[i,j-1,4])
-                V_s[i,j] = 0.5*(V[i,j] + V[i,j-1]) + ((dx_CV[i,j] / (4*a_P_s))*((P[i,j+1] - 3*P[i,j] + 3*P[i,j-1] - P[i,j-2])))
-
-            #U,V  accordin to rhie chow
-            F[i,j,0] =  rho * U_e[i,j] * dy_CV[i,j]  # east convective
-            F[i,j,1] =  rho * U_w[i,j] * dy_CV[i,j]  # weast convective
-            F[i,j,2] =  rho * V_n[i,j] * dx_CV[i,j]  # north convective
-            F[i,j,3] =  rho * V_s[i,j] * dx_CV[i,j]  # south convective
+    
             
     #TODO impose zero mass flow at the boundaries
-    for i in range(1, nI-1):
-        j = 0
-        F[i,j,3] = 0
+    # for i in range(1, nI-1):
+    #     j = 0
+    #     F[i,j,3] = 0
 
-        j = nJ - 1
-        F[i,j,2] = 0
+    #     j = nJ - 1
+    #     F[i,j,2] = 0
 
-    for j in range(1, nJ-1):
-        i = 0
-        F[i,j,0] = 0
+    # for j in range(1, nJ-1):
+    #     i = 0
+    #     F[i,j,0] = 0
 
-        i = nI-1
-        F[i,j,1] = 0     
+    #     i = nI-1
+    #     F[i,j,1] = 0     
     # Compute residuals
     
     R_U = 0
@@ -310,10 +328,10 @@ for iter in range(nIterations):
     R_C = 0
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            R_U = R_U + abs(coeffsUV[i,j,4]*U[i,j] - coeffsUV[i,j,0]*U[i+1,j] \
-                - coeffsUV[i,j,1]*U[i-1,j] - coeffsUV[i,j,2]*U[i,j+1] - coeffsUV[i,j,3]*U[i,j-1] - sourceUV[i,j,0])
+            R_U =  R_U + (1/UWall*xL) * abs(coeffsUV[i,j,4]*U[i,j] / alphaUV - coeffsUV[i,j,0]*U[i+1,j] \
+                - coeffsUV[i,j,1]*U[i-1,j] - coeffsUV[i,j,2]*U[i,j+1] - coeffsUV[i,j,3]*U[i,j-1] - sourceUV[i,j,0])  
             
-            R_V = R_V + abs(coeffsUV[i,j,4]*V[i,j] - coeffsUV[i,j,0]*V[i+1,j] \
+            R_V = R_V + (1/UWall*yL) * abs(coeffsUV[i,j,4]*V[i,j] / alphaUV - coeffsUV[i,j,0]*V[i+1,j] \
                 - coeffsUV[i,j,1]*V[i-1,j] - coeffsUV[i,j,2]*V[i,j+1] - coeffsUV[i,j,3]*V[i,j-1] - sourceUV[i,j,1])
             
             R_C = R_C + abs(sourcePp[i,j])
@@ -346,7 +364,7 @@ plt.figure()
 
 # U velocity contour
 plt.subplot(2,3,1)
-plt.pcolormesh(xCoords_N, yCoords_N, U)
+plt.contourf(xCoords_N, yCoords_N, U, 50)
 plt.title('U velocity [m/s]')
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
@@ -354,14 +372,14 @@ plt.ylabel('y [m]')
 # V velocity contour
 plt.subplot(2,3,2)
 plt.title('V velocity [m/s]')
-plt.pcolormesh(xCoords_N, yCoords_N, V)
+plt.contourf(xCoords_N, yCoords_N, V, 50)
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
 
 # P contour
 plt.subplot(2,3,3)
 plt.title('Pressure [Pa]')
-plt.pcolormesh(xCoords_N, yCoords_N, P)
+plt.contourf(xCoords_N, yCoords_N, P, 50)
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
 
@@ -370,6 +388,7 @@ plt.subplot(2,3,4)
 plt.title('Vector plot of the velocity field')
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
+plt.quiver(xCoords_N, yCoords_N, U, V)
 
 # Comparison with data
 data=np.genfromtxt(data_file, skip_header=1)
