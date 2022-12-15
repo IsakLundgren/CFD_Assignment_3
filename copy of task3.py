@@ -8,9 +8,7 @@
 
 #==============Packages needed=================
 import matplotlib.pyplot as plt
-from matplotlib import cm 
 import numpy as np
-
 
 #================= Inputs =====================
 
@@ -24,8 +22,8 @@ data_file = 'data_FOU_CD.txt' #data file where the given solution is stored
 
 # Geometric inputs (fixed so that a fair comparison can be made)
 
-mI = 22 # number of mesh points X direction. 
-mJ = 22 # number of mesh points Y direction. 
+mI = 11 # number of mesh points X direction. 
+mJ = 11 # number of mesh points Y direction. 
 xL =  1 # length in X direction
 yL =  1 # length in Y direction
 
@@ -153,12 +151,16 @@ for i in range(1,nI-1):
 # Looping
 
 for iter in range(nIterations):
-    # coeffsUV[:, :, :] = 0
-    # sourceUV[:, :, :] = 0
-    # sourcePp[:, :] = 0
-    # coeffsPp[:, :, :] = 0
+    coeffsUV[:, :, :] = 0
+    sourceUV[:, :, :] = 0
+    sourcePp[:, :] = 0
+    coeffsPp[:, :, :] = 0
     # Impose boundary conditions for velocities, only the top boundary wall
     # is moving from left to right with UWall
+    coeffsUV[:,:,:] = 0
+    coeffsPp[:,:,:] = 0
+    sourceUV[:,:,:] = 0
+    sourcePp[:,:] = 0
     U[:, -1] = UWall
 
     #TODO Calc Fs here
@@ -356,11 +358,6 @@ for iter in range(nIterations):
 
 # Plot mesh
 plt.figure()
-for i in range(0,mI):
-    plt.plot(xCoords_M[i,[0,-1]],yCoords_M[i,[0,-1]], 'k-')
-for j in range(0,mJ):
-    plt.plot(xCoords_M[[0,-1],j],yCoords_M[[0,-1],j], 'k-')
-plt.scatter(xCoords_N, yCoords_N, marker=".", color="r", label='nodes', s=1)
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
 plt.title('Computational mesh')
@@ -371,8 +368,7 @@ plt.figure()
 
 # U velocity contour
 plt.subplot(2,3,1)
-plt.contourf(xCoords_N, yCoords_N, U, 50, cmap =cm. coolwarm)
-plt.colorbar()
+plt.contourf(xCoords_N, yCoords_N, U, 50)
 plt.title('U velocity [m/s]')
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
@@ -380,16 +376,14 @@ plt.ylabel('y [m]')
 # V velocity contour
 plt.subplot(2,3,2)
 plt.title('V velocity [m/s]')
-plt.contourf(xCoords_N, yCoords_N, V, 50, cmap = cm.coolwarm)
-plt.colorbar()
+plt.contourf(xCoords_N, yCoords_N, V, 50)
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
 
 # P contour
 plt.subplot(2,3,3)
 plt.title('Pressure [Pa]')
-plt.contourf(xCoords_N, yCoords_N, P, 100, cmap = cm.coolwarm)
-plt.colorbar()
+plt.contourf(xCoords_N, yCoords_N, P, 50)
 plt.xlabel('x [m]')
 plt.ylabel('y [m]')
 
@@ -400,7 +394,7 @@ plt.xlabel('x [m]')
 plt.ylabel('y [m]')
 plt.quiver(xCoords_N, yCoords_N, U, V)
 
-# # Comparison with data
+# Comparison with data
 data=np.genfromtxt(data_file, skip_header=1)
 uInterp = np.zeros((nJ-2,1))
 vInterp = np.zeros((nJ-2,1))
@@ -426,11 +420,6 @@ plt.ylabel('y [m]')
 plt.legend()
 
 plt.subplot(2,3,6)
-plt.plot(residuals_U, label = 'U - Residuals')
-plt.plot(residuals_V, label = 'V - Residuals')
-plt.plot(residuals_c, label = 'Continuity Residuals')
-plt.legend()
-plt.yscale('log')
 plt.title('Residual convergence')
 plt.xlabel('iterations')
 plt.ylabel('residuals [-]')
